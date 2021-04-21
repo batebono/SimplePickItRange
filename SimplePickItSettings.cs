@@ -10,9 +10,15 @@ namespace SimplePickIt
         public ToggleNode Enable { get; set; } = new ToggleNode(true);
 
         [Menu("PickUp Hotkey")]
-        public HotkeyNode PickUpKey { get; set; } = new HotkeyNode(Keys.F1);
+        public HotkeyNode PickUpKey { get; set; } = new HotkeyNode(Keys.Space);
 
-        [Menu("Time between Clicks in Milliseconds")]
-        public RangeNode<int> WaitTimeInMs { get; set; } = new RangeNode<int>(75, 40, 200);
+        [Menu("Maximum Distance. 100 -> anywhere")]
+        public RangeNode<int> MaxDistance { get; set; } = new RangeNode<int>(50, 10, 100);
+
+        [Menu("Time between clicks in milliseconds")]
+        public RangeNode<int> DelayClicksInMs { get; set; } = new RangeNode<int>(40, 25, 100);
+        [Menu("Extra delay for consecutive clicks on the same item in milliseconds")]
+        public RangeNode<int> ExtraDelaySameItemInMs { get; set; } = new RangeNode<int>(100, 0, 300);
+
     }
 }
