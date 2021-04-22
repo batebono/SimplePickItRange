@@ -14,7 +14,6 @@ namespace SimplePickIt
 {
     public class SimplePickIt : BaseSettingsPlugin<SimplePickItSettings>
     {
-        private Random Random { get; } = new Random();
         private LabelOnGround[] ItemsToPick = new LabelOnGround[10];
 
         public override Job Tick()
@@ -55,13 +54,14 @@ namespace SimplePickIt
             {
                 var nextItem = ItemsToPick[0];
 
-                var waitTime = Settings.DelayClicksInMs - (int)clickTimer.ElapsedMilliseconds;
-                if (!firstRun && waitTime > 0)
-                {
-                    yield return new WaitTime(waitTime);
-                }
+                var withoutMouseClick = (Settings.DelayClicksInMs < (int)clickTimer.ElapsedMilliseconds) && !firstRun;
                 
-                yield return PickItem(nextItem, gameWindow);
+                yield return PickItem(nextItem, gameWindow, withoutMouseClick);
+                if (withoutMouseClick)
+                {
+                    yield return new WaitTime(1);
+                    continue;
+                }
 
                 lastItemAddress = nextItem.Address;
                 if (nextItem.Address == lastItemAddress && Settings.ExtraDelaySameItemInMs.Value > 0)
@@ -74,20 +74,20 @@ namespace SimplePickIt
             }
         }
 
-        private IEnumerator PickItem(LabelOnGround itemToPick, RectangleF window)
+        private IEnumerator PickItem(LabelOnGround itemToPick, RectangleF window, bool withoutMouseClick)
         {
-            var centerOfLabel = itemToPick?.Label?.GetClientRect().Center 
-                + window.TopLeft
-                + new Vector2(Random.Next(0, 2), Random.Next(0, 2));
+            var centerOfLabel = itemToPick?.Label?.GetClientRect().Center + window.TopLeft;
 
             if (!centerOfLabel.HasValue) yield break;
             if (centerOfLabel.Value.X == 0 || centerOfLabel.Value.Y == 0) yield break;
             if (float.IsNaN(centerOfLabel.Value.X) || float.IsNaN(centerOfLabel.Value.Y)) yield break;
 
             Input.SetCursorPos(centerOfLabel.Value);
+
+            if (withoutMouseClick) yield break;
             Input.Click(MouseButtons.Left);
 
-            DebugWindow.LogDebug($"SimplePickIt.PickItem -> clicked position x: {centerOfLabel.Value.X} y: {centerOfLabel.Value.Y}");
+            DebugWindow.LogDebug($"SimplePickIt.PickItem -> {DateTime.Now:mm:ss.fff} clicked position x: {centerOfLabel.Value.X} y: {centerOfLabel.Value.Y}");
         }
 
         private LabelOnGround[] GetItemsToPick(RectangleF window, int maxAmount = 10)
