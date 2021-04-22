@@ -6,6 +6,7 @@ using ExileCore.Shared.Helpers;
 using SharpDX;
 using System;
 using System.Collections;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -14,6 +15,17 @@ namespace SimplePickIt
     public class SimplePickIt : BaseSettingsPlugin<SimplePickItSettings>
     {
         private Random Random { get; } = new Random();
+        private LabelOnGround[] ItemsToPick = new LabelOnGround[10];
+
+        public override Job Tick()
+        {
+            var gameWindow = GameController.Window.GetWindowRectangle();
+            var lootableGameWindow = new RectangleF(150, 150, gameWindow.Width - 150, gameWindow.Height - 150);
+
+            ItemsToPick = GetItemsToPick(lootableGameWindow, 10);
+
+            return null;
+        }
 
         public override void Render()
         {
@@ -33,17 +45,32 @@ namespace SimplePickIt
 
         private IEnumerator PickItems()
         {
-            var window = GameController.Window.GetWindowRectangle();
-            var nextItem = GetItemToPick(window);
-            long lastItemAddress;
-            while (nextItem != null && Input.GetKeyState(Settings.PickUpKey.Value))
-            {
-                lastItemAddress = nextItem.Address;
-                yield return PickItem(nextItem, window);
-                yield return new WaitTime(Settings.DelayClicksInMs.Value);
+            var gameWindow = GameController.Window.GetWindowRectangle();
 
-                nextItem = GetItemToPick(window);
-                if (nextItem.Address == lastItemAddress) yield return new WaitTime(Settings.ExtraDelaySameItemInMs.Value);
+            var clickTimer = new Stopwatch();
+            clickTimer.Start();
+            var firstRun = true;
+            long lastItemAddress;
+            while (ItemsToPick.Length > 0 && Input.GetKeyState(Settings.PickUpKey.Value))
+            {
+                var nextItem = ItemsToPick[0];
+
+                var waitTime = Settings.DelayClicksInMs - (int)clickTimer.ElapsedMilliseconds;
+                if (!firstRun && waitTime > 0)
+                {
+                    yield return new WaitTime(waitTime);
+                }
+                
+                yield return PickItem(nextItem, gameWindow);
+
+                lastItemAddress = nextItem.Address;
+                if (nextItem.Address == lastItemAddress && Settings.ExtraDelaySameItemInMs.Value > 0)
+                {
+                    yield return new WaitTime(Settings.ExtraDelaySameItemInMs.Value);
+                }
+                
+                clickTimer.Restart();
+                firstRun = false;
             }
         }
 
@@ -54,16 +81,20 @@ namespace SimplePickIt
                 + new Vector2(Random.Next(0, 2), Random.Next(0, 2));
 
             if (!centerOfLabel.HasValue) yield break;
+            if (centerOfLabel.Value.X == 0 || centerOfLabel.Value.Y == 0) yield break;
+            if (float.IsNaN(centerOfLabel.Value.X) || float.IsNaN(centerOfLabel.Value.Y)) yield break;
 
             Input.SetCursorPos(centerOfLabel.Value);
             Input.Click(MouseButtons.Left);
+
+            DebugWindow.LogDebug($"SimplePickIt.PickItem -> clicked position x: {centerOfLabel.Value.X} y: {centerOfLabel.Value.Y}");
         }
 
-        private LabelOnGround GetItemToPick(RectangleF window)
+        private LabelOnGround[] GetItemsToPick(RectangleF window, int maxAmount = 10)
         {
             var windowSize = new RectangleF(150, 150, window.Width-150, window.Height-150);
 
-            var closestLabel = GameController.Game.IngameState.IngameUi.ItemsOnGroundLabels
+            var itemsToPick = GameController.Game.IngameState.IngameUi.ItemsOnGroundLabels
                 ?.Where(label => label.Address != 0
                     && label.ItemOnGround?.Type != null
                     && label.ItemOnGround.Type == EntityType.WorldItem
@@ -73,9 +104,10 @@ namespace SimplePickIt
                     && (label.Label.GetClientRect().Center).PointInRectangle(windowSize)
                     )
                 .OrderBy(label => label.ItemOnGround.DistancePlayer)
-                .FirstOrDefault();
+                .Take(maxAmount)
+                .ToArray();
 
-            return closestLabel;
+            return itemsToPick;
         }
     }
 }
