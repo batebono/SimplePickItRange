@@ -49,7 +49,6 @@ namespace SimplePickIt
             var clickTimer = new Stopwatch();
             clickTimer.Start();
             var firstRun = true;
-            long lastItemAddress;
             while (ItemsToPick.Length > 0 && Input.GetKeyState(Settings.PickUpKey.Value))
             {
                 var nextItem = ItemsToPick[0];
@@ -61,12 +60,6 @@ namespace SimplePickIt
                 {
                     yield return new WaitTime(1);
                     continue;
-                }
-
-                lastItemAddress = nextItem.Address;
-                if (nextItem.Address == lastItemAddress && Settings.ExtraDelaySameItemInMs.Value > 0)
-                {
-                    yield return new WaitTime(Settings.ExtraDelaySameItemInMs.Value);
                 }
                 
                 clickTimer.Restart();

@@ -17,8 +17,6 @@ namespace SimplePickIt
 
         [Menu("Time between clicks in milliseconds")]
         public RangeNode<int> DelayClicksInMs { get; set; } = new RangeNode<int>(40, 0, 100);
-        [Menu("Extra delay for same item in milliseconds")]
-        public RangeNode<int> ExtraDelaySameItemInMs { get; set; } = new RangeNode<int>(25, 0, 300);
 
     }
 }
