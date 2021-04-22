@@ -52,16 +52,10 @@ namespace SimplePickIt
             while (ItemsToPick.Length > 0 && Input.GetKeyState(Settings.PickUpKey.Value))
             {
                 var nextItem = ItemsToPick[0];
-
                 var onlyMoveMouse = ((long)Settings.DelayClicksInMs > clickTimer.ElapsedMilliseconds) && !firstRun;
-                DebugWindow.LogDebug($"SimplePickIt.PickItem -> {DateTime.Now:mm:ss.fff} elapsed ms {clickTimer.ElapsedMilliseconds}");
 
                 yield return PickItem(nextItem, gameWindow, onlyMoveMouse);
-                if (onlyMoveMouse)
-                {
-                    yield return new WaitTime(1);
-                }
-                else
+                if (!onlyMoveMouse)
                 {
                     clickTimer.Restart();
                     firstRun = false;
