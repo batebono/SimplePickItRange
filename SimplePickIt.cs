@@ -53,21 +53,23 @@ namespace SimplePickIt
             {
                 var nextItem = ItemsToPick[0];
 
-                var withoutMouseClick = (Settings.DelayClicksInMs < (int)clickTimer.ElapsedMilliseconds) && !firstRun;
-                
-                yield return PickItem(nextItem, gameWindow, withoutMouseClick);
-                if (withoutMouseClick)
+                var onlyMoveMouse = ((long)Settings.DelayClicksInMs > clickTimer.ElapsedMilliseconds) && !firstRun;
+                DebugWindow.LogDebug($"SimplePickIt.PickItem -> {DateTime.Now:mm:ss.fff} elapsed ms {clickTimer.ElapsedMilliseconds}");
+
+                yield return PickItem(nextItem, gameWindow, onlyMoveMouse);
+                if (onlyMoveMouse)
                 {
                     yield return new WaitTime(1);
-                    continue;
                 }
-                
-                clickTimer.Restart();
-                firstRun = false;
+                else
+                {
+                    clickTimer.Restart();
+                    firstRun = false;
+                }
             }
         }
 
-        private IEnumerator PickItem(LabelOnGround itemToPick, RectangleF window, bool withoutMouseClick)
+        private IEnumerator PickItem(LabelOnGround itemToPick, RectangleF window, bool onlyMoveMouse)
         {
             var centerOfLabel = itemToPick?.Label?.GetClientRect().Center + window.TopLeft;
 
@@ -77,7 +79,7 @@ namespace SimplePickIt
 
             Input.SetCursorPos(centerOfLabel.Value);
 
-            if (withoutMouseClick) yield break;
+            if (onlyMoveMouse) yield break;
             Input.Click(MouseButtons.Left);
 
             DebugWindow.LogDebug($"SimplePickIt.PickItem -> {DateTime.Now:mm:ss.fff} clicked position x: {centerOfLabel.Value.X} y: {centerOfLabel.Value.Y}");
