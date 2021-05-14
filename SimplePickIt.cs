@@ -14,15 +14,26 @@ namespace SimplePickIt
 {
     public class SimplePickIt : BaseSettingsPlugin<SimplePickItSettings>
     {
-        private LabelOnGround[] ItemsToPick = new LabelOnGround[10];
+        private LabelOnGround[] _itemsToPick = new LabelOnGround[10];
+        private Stopwatch _getItemsToPickTimer = new Stopwatch();
+
+        public override bool Initialise()
+        {
+            _getItemsToPickTimer.Start();
+            return base.Initialise();
+        }
 
         public override Job Tick()
         {
             var gameWindow = GameController.Window.GetWindowRectangle();
             var lootableGameWindow = new RectangleF(150, 150, gameWindow.Width - 150, gameWindow.Height - 150);
 
-            ItemsToPick = GetItemsToPick(lootableGameWindow, 10);
+            if (!Input.GetKeyState(Settings.PickUpKey.Value)) return null;
+            if (!_getItemsToPickTimer.IsRunning 
+                || _getItemsToPickTimer.ElapsedMilliseconds < Settings.DelayGetItemsToPick?.Value) return null;
 
+            _itemsToPick = GetItemsToPick(lootableGameWindow, 10);
+            _getItemsToPickTimer.Restart();
             return null;
         }
 
@@ -49,9 +60,9 @@ namespace SimplePickIt
             var clickTimer = new Stopwatch();
             clickTimer.Start();
             var firstRun = true;
-            while (ItemsToPick.Length > 0 && Input.GetKeyState(Settings.PickUpKey.Value))
+            while (_itemsToPick.Any() && Input.GetKeyState(Settings.PickUpKey.Value))
             {
-                var nextItem = ItemsToPick[0];
+                var nextItem = _itemsToPick[0];
                 var onlyMoveMouse = ((long)Settings.DelayClicksInMs > clickTimer.ElapsedMilliseconds) && !firstRun;
 
                 yield return PickItem(nextItem, gameWindow, onlyMoveMouse);
