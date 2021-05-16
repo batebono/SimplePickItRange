@@ -79,7 +79,8 @@ namespace SimplePickIt
             var centerOfLabel = itemToPick?.Label?.GetClientRect().Center + window.TopLeft;
 
             if (!centerOfLabel.HasValue) yield break;
-            if (centerOfLabel.Value.X == 0 || centerOfLabel.Value.Y == 0) yield break;
+            if (centerOfLabel.Value.X <= 0 || centerOfLabel.Value.Y <= 0) yield break;
+            if (centerOfLabel.Value.X > 10000 || centerOfLabel.Value.Y > 10000) yield break;
             if (float.IsNaN(centerOfLabel.Value.X) || float.IsNaN(centerOfLabel.Value.Y)) yield break;
 
             Input.SetCursorPos(centerOfLabel.Value);
@@ -87,7 +88,7 @@ namespace SimplePickIt
             if (onlyMoveMouse) yield break;
             Input.Click(MouseButtons.Left);
 
-            DebugWindow.LogDebug($"SimplePickIt.PickItem -> {DateTime.Now:mm:ss.fff} clicked position x: {centerOfLabel.Value.X} y: {centerOfLabel.Value.Y}");
+            if (Settings.DebugLogging?.Value == true) DebugWindow.LogDebug($"SimplePickIt.PickItem -> {DateTime.Now:mm:ss.fff} clicked position x: {centerOfLabel.Value.X} y: {centerOfLabel.Value.Y}");
         }
 
         private LabelOnGround[] GetItemsToPick(RectangleF window, int maxAmount = 10)

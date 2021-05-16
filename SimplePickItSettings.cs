@@ -21,5 +21,8 @@ namespace SimplePickIt
         [Menu("Delay between search items to pick")]
         public RangeNode<int> DelayGetItemsToPick { get; set; } = new RangeNode<int>(200, 50, 500);
 
+        [Menu("Activate extensive debug logging")]
+        public ToggleNode DebugLogging { get; set; } = new ToggleNode(false);
+
     }
 }
