@@ -15,34 +15,16 @@ namespace SimplePickIt
     public class SimplePickIt : BaseSettingsPlugin<SimplePickItSettings>
     {
         private LabelOnGround[] _itemsToPick = new LabelOnGround[10];
-        private Stopwatch _getItemsToPickTimer = new Stopwatch();
-
+        private readonly Stopwatch _clickTimer = new Stopwatch();
         public override bool Initialise()
         {
-            _getItemsToPickTimer.Start();
+            _clickTimer.Start();
             return base.Initialise();
         }
 
         public override Job Tick()
         {
-            var gameWindow = GameController.Window.GetWindowRectangle();
-            var lootableGameWindow = new RectangleF(150, 150, gameWindow.Width - 150, gameWindow.Height - 150);
-
-            if (!Input.GetKeyState(Settings.PickUpKey.Value)) return null;
-            if (!_getItemsToPickTimer.IsRunning 
-                || _getItemsToPickTimer.ElapsedMilliseconds < Settings.DelayGetItemsToPick?.Value) return null;
-
-            _itemsToPick = GetItemsToPick(lootableGameWindow, 10);
-            _getItemsToPickTimer.Restart();
-            return null;
-        }
-
-        public override void Render()
-        {
-            if (!IsRunConditionMet()) return;
-
-            var coroutineWorker = new Coroutine(PickItems(), this, "SimplePickIt.PickItems");
-            Core.ParallelRunner.Run(coroutineWorker);
+            return new Job("SimplePickIt", PickItems, 60000);
         }
 
         private bool IsRunConditionMet()
@@ -53,39 +35,40 @@ namespace SimplePickIt
             return true;
         }
 
-        private IEnumerator PickItems()
+        private void PickItems()
         {
             var gameWindow = GameController.Window.GetWindowRectangle();
+            var lootableGameWindow = new RectangleF(150, 150, gameWindow.Width - 150, gameWindow.Height - 150);
 
-            var clickTimer = new Stopwatch();
-            clickTimer.Start();
-            var firstRun = true;
-            while (_itemsToPick.Any() && Input.GetKeyState(Settings.PickUpKey.Value))
+            if (!IsRunConditionMet()) return;
+            _itemsToPick = GetItemsToPick(lootableGameWindow);
+
+            while (_itemsToPick.Any() && IsRunConditionMet())
             {
                 var nextItem = _itemsToPick[0];
-                var onlyMoveMouse = ((long)Settings.DelayClicksInMs > clickTimer.ElapsedMilliseconds) && !firstRun;
+                var onlyMoveMouse = ((long)Settings.DelayClicksInMs > _clickTimer.ElapsedMilliseconds);
 
-                yield return PickItem(nextItem, gameWindow, onlyMoveMouse);
+                PickItem(nextItem, gameWindow, onlyMoveMouse);
                 if (!onlyMoveMouse)
                 {
-                    clickTimer.Restart();
-                    firstRun = false;
+                    _clickTimer.Restart();
+                    _itemsToPick = GetItemsToPick(lootableGameWindow);
                 }
             }
         }
 
-        private IEnumerator PickItem(LabelOnGround itemToPick, RectangleF window, bool onlyMoveMouse)
+        private void PickItem(LabelOnGround itemToPick, RectangleF window, bool onlyMoveMouse)
         {
             var centerOfLabel = itemToPick?.Label?.GetClientRect().Center + window.TopLeft;
 
-            if (!centerOfLabel.HasValue) yield break;
-            if (centerOfLabel.Value.X <= 0 || centerOfLabel.Value.Y <= 0) yield break;
-            if (centerOfLabel.Value.X > 10000 || centerOfLabel.Value.Y > 10000) yield break;
-            if (float.IsNaN(centerOfLabel.Value.X) || float.IsNaN(centerOfLabel.Value.Y)) yield break;
+            if (!centerOfLabel.HasValue) return;
+            if (centerOfLabel.Value.X <= 0 || centerOfLabel.Value.Y <= 0) return;
+            if (centerOfLabel.Value.X > 10000 || centerOfLabel.Value.Y > 10000) return;
+            if (float.IsNaN(centerOfLabel.Value.X) || float.IsNaN(centerOfLabel.Value.Y)) return;
 
             Input.SetCursorPos(centerOfLabel.Value);
 
-            if (onlyMoveMouse) yield break;
+            if (onlyMoveMouse) return;
             Input.Click(MouseButtons.Left);
 
             if (Settings.DebugLogging?.Value == true) DebugWindow.LogDebug($"SimplePickIt.PickItem -> {DateTime.Now:mm:ss.fff} clicked position x: {centerOfLabel.Value.X} y: {centerOfLabel.Value.Y}");
