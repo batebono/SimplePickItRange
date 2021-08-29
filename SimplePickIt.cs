@@ -101,7 +101,6 @@ namespace SimplePickIt
                     && label.ItemOnGround.Type == EntityType.WorldItem
                     && label.IsVisible
                     && (label.CanPickUp || label.MaxTimeForPickUp.TotalSeconds <= 0)
-                    && label.ItemOnGround.DistancePlayer <= Settings.MaxDistance.Value
                     && (label.Label.GetClientRect().Center).PointInRectangle(windowSize)
                     )
                 .OrderBy(label => label.ItemOnGround.DistancePlayer)
