@@ -13,7 +13,7 @@ namespace SimplePickIt
         public HotkeyNode PickUpKey { get; set; } = new HotkeyNode(Keys.Space);
 
         [Menu("Maximum Distance. 200 -> anywhere")]
-        public RangeNode<int> MaxDistance { get; set; } = new RangeNode<int>(100, 10, 200);
+        public RangeNode<int> MaxDistance { get; set; } = new RangeNode<int>(100, 10, 500);
 
         [Menu("Time between clicks in milliseconds")]
         public RangeNode<int> DelayClicksInMs { get; set; } = new RangeNode<int>(40, 0, 100);
