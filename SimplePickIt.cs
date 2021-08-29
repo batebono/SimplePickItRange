@@ -99,6 +99,7 @@ namespace SimplePickIt
                 ?.Where(label => label.Address != 0
                     && label.ItemOnGround?.Type != null
                     && label.ItemOnGround.Type == EntityType.WorldItem
+                    && label.IsVisible
                     && (label.CanPickUp || label.MaxTimeForPickUp.TotalSeconds <= 0)
                     )
                 .OrderBy(label => label.ItemOnGround.DistancePlayer)
